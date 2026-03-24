@@ -1,16 +1,22 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5101',
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
+// Request interceptor: attach token to every request
 axiosInstance.interceptors.request.use(
   (config) => {
+    if (typeof window === 'undefined') {
+      return config;
+    }
+    
     const token = localStorage.getItem('accessToken');
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -21,45 +27,16 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+// Response interceptor: handle 401 by redirecting to login
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        
-        if (!refreshToken) {
-          localStorage.clear();
-          window.location.href = '/login';
-          return Promise.reject(error);
-        }
-
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh-token`,
-          { refreshToken }
-        );
-
-        const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
-
-        if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        }
-
-        return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        localStorage.clear();
+    if (error.response?.status === 401) {
+      localStorage.clear();
+      if (typeof window !== 'undefined') {
         window.location.href = '/login';
-        return Promise.reject(refreshError);
       }
     }
-
     return Promise.reject(error);
   }
 );

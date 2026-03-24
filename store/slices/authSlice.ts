@@ -1,41 +1,46 @@
-// store/slices/authSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiClient } from '@/lib/axios';
 
 // Types
 export interface User {
-  id: string;
+  _id: string;
+  id?: string;
   email: string;
+  name: string;
   firstName?: string;
   lastName?: string;
-  role: string;
-  profilePicture?: string;
+  role: string[];
+  status: string;
+  phone?: string;
+  avatar?: string;
+  isEmailVerified: boolean;
+  lastLoginAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface AuthResponse {
+  token: string;
+  user: User;
+  expiresIn: string;
+}
+
+interface RegisterResponse {
+  user: User;
 }
 
 interface AuthState {
   user: User | null;
   accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
-}
-
-interface SendOTPResponse {
-  message: string;
-}
-
-interface VerifyOTPResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
 }
 
 // Initial state
 const initialState: AuthState = {
   user: null,
   accessToken: null,
-  refreshToken: null,
   isAuthenticated: false,
   loading: false,
   error: null,
@@ -43,118 +48,148 @@ const initialState: AuthState = {
 
 // Async Thunks
 
-// Send OTP
-export const sendOTP = createAsyncThunk<
-  SendOTPResponse,
-  { email: string },
+// Register
+export const register = createAsyncThunk<
+  RegisterResponse,
+  { name: string; email: string; password: string; phone?: string },
   { rejectValue: string }
 >(
-  'auth/sendOTP',
-  async ({ email }, { rejectWithValue }) => {
+  'auth/register',
+  async ({ name, email, password, phone }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post<{ success: boolean; data: SendOTPResponse }>(
-        '/api/v1/auth/send-otp',
-        { email }
-      );
+      const response = await apiClient.post<{
+        success: boolean;
+        message: string;
+        data: RegisterResponse;
+      }>('/api/public/register', {
+        name,
+        email,
+        password,
+        phone,
+      });
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to send OTP');
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || 'Registration failed');
     }
   }
 );
 
-// Verify OTP
-export const verifyOTP = createAsyncThunk<
-  VerifyOTPResponse,
-  { email: string; otp: string },
+// Login
+export const login = createAsyncThunk<
+  AuthResponse,
+  { email: string; password: string },
   { rejectValue: string }
 >(
-  'auth/verifyOTP',
-  async ({ email, otp }, { rejectWithValue }) => {
+  'auth/login',
+  async ({ email, password }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post<{ success: boolean; data: VerifyOTPResponse }>(
-        '/api/v1/auth/verify-otp',
-        { email, otp }
-      );
-      
-      const { accessToken, refreshToken, user } = response.data.data;
-      
+      const response = await apiClient.post<{
+        success: boolean;
+        message: string;
+        data: AuthResponse;
+      }>('/api/public/login', {
+        email,
+        password,
+      });
+
+      const { token, user, expiresIn } = response.data.data;
+
       // Store in localStorage
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('accessToken', token);
       localStorage.setItem('user', JSON.stringify(user));
-      
-      return response.data.data;
+
+      return { token, user, expiresIn };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Invalid OTP');
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || 'Login failed');
     }
   }
 );
 
 // Logout
-export const logout = createAsyncThunk<
-  void,
-  void,
-  { rejectValue: string }
->(
+export const logout = createAsyncThunk<void, void, { rejectValue: string }>(
   'auth/logout',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as { auth: AuthState };
-      const refreshToken = state.auth.refreshToken;
-      
-      if (refreshToken) {
-        await apiClient.post('/api/v1/auth/logout', { refreshToken });
-      }
-      
-      // Clear localStorage
       localStorage.clear();
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Logout failed');
+      return rejectWithValue('Logout failed');
     }
   }
 );
 
-// Refresh Token
-export const refreshAccessToken = createAsyncThunk<
-  { accessToken: string; refreshToken: string },
+// Get current user (me)
+export const getMe = createAsyncThunk<
+  { user: User },
   void,
   { rejectValue: string }
 >(
-  'auth/refreshToken',
-  async (_, { rejectWithValue, getState }) => {
+  'auth/getMe',
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState() as { auth: AuthState };
-      const refreshToken = state.auth.refreshToken;
-      
-      if (!refreshToken) {
-        return rejectWithValue('No refresh token available');
-      }
-      
-      const response = await apiClient.post<{ 
-        success: boolean; 
-        data: { accessToken: string; refreshToken: string } 
-      }>(
-        '/api/v1/auth/refresh-token',
-        { refreshToken }
-      );
-      
-      const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-      
-      // Update localStorage
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', newRefreshToken);
-      
-      return { accessToken, refreshToken: newRefreshToken };
+      const response = await apiClient.get<{
+        success: boolean;
+        message: string;
+        data: { user: User };
+      }>('/api/private/me');
+
+      return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Token refresh failed');
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || 'Failed to fetch profile');
+    }
+  }
+);
+
+// Update current user (me)
+export const updateMe = createAsyncThunk<
+  { user: User },
+  { name?: string; phone?: string; avatar?: string },
+  { rejectValue: string }
+>(
+  'auth/updateMe',
+  async ({ name, phone, avatar }, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.put<{
+        success: boolean;
+        message: string;
+        data: { user: User };
+      }>('/api/private/me', {
+        name,
+        phone,
+        avatar,
+      });
+
+      const { user } = response.data.data;
+
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(user));
+
+      return { user };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || 'Failed to update profile');
+    }
+  }
+);
+
+// Delete current user (me)
+export const deleteMe = createAsyncThunk<
+  void,
+  void,
+  { rejectValue: string }
+>(
+  'auth/deleteMe',
+  async (_, { rejectWithValue }) => {
+    try {
+      await apiClient.delete('/api/private/me');
+      localStorage.clear();
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || error.response?.data?.message || 'Failed to delete account');
     }
   }
 );
 
 // Load user from localStorage on app start
 export const loadUserFromStorage = createAsyncThunk<
-  { user: User; accessToken: string; refreshToken: string },
+  { user: User; accessToken: string },
   void,
   { rejectValue: string }
 >(
@@ -162,16 +197,14 @@ export const loadUserFromStorage = createAsyncThunk<
   async (_, { rejectWithValue }) => {
     try {
       const accessToken = localStorage.getItem('accessToken');
-      const refreshToken = localStorage.getItem('refreshToken');
       const userStr = localStorage.getItem('user');
-      
-      if (!accessToken || !refreshToken || !userStr) {
+
+      if (!accessToken || !userStr) {
         return rejectWithValue('No stored authentication data');
       }
-      
+
       const user = JSON.parse(userStr);
-      
-      return { user, accessToken, refreshToken };
+      return { user, accessToken };
     } catch (error: any) {
       return rejectWithValue('Failed to load user from storage');
     }
@@ -188,38 +221,37 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Send OTP
+    // Register
     builder
-      .addCase(sendOTP.pending, (state) => {
+      .addCase(register.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(sendOTP.fulfilled, (state) => {
+      .addCase(register.fulfilled, (state) => {
         state.loading = false;
         state.error = null;
       })
-      .addCase(sendOTP.rejected, (state, action) => {
+      .addCase(register.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to send OTP';
+        state.error = action.payload || 'Registration failed';
       });
 
-    // Verify OTP
+    // Login
     builder
-      .addCase(verifyOTP.pending, (state) => {
+      .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(verifyOTP.fulfilled, (state, action: PayloadAction<VerifyOTPResponse>) => {
+      .addCase(login.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
         state.loading = false;
         state.error = null;
         state.user = action.payload.user;
-        state.accessToken = action.payload.accessToken;
-        state.refreshToken = action.payload.refreshToken;
+        state.accessToken = action.payload.token;
         state.isAuthenticated = true;
       })
-      .addCase(verifyOTP.rejected, (state, action) => {
+      .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Invalid OTP';
+        state.error = action.payload || 'Login failed';
       });
 
     // Logout
@@ -231,30 +263,67 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = null;
         state.accessToken = null;
-        state.refreshToken = null;
         state.isAuthenticated = false;
         state.error = null;
       })
       .addCase(logout.rejected, (state) => {
-        // Still clear state even if API call fails
         state.loading = false;
         state.user = null;
         state.accessToken = null;
-        state.refreshToken = null;
         state.isAuthenticated = false;
       });
 
-    // Refresh Token
+    // Get Me
     builder
-      .addCase(refreshAccessToken.fulfilled, (state, action) => {
-        state.accessToken = action.payload.accessToken;
-        state.refreshToken = action.payload.refreshToken;
+      .addCase(getMe.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(refreshAccessToken.rejected, (state) => {
+      .addCase(getMe.fulfilled, (state, action: PayloadAction<{ user: User }>) => {
+        state.loading = false;
+        state.error = null;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+      })
+      .addCase(getMe.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch profile';
         state.user = null;
         state.accessToken = null;
-        state.refreshToken = null;
         state.isAuthenticated = false;
+      });
+
+    // Update Me
+    builder
+      .addCase(updateMe.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateMe.fulfilled, (state, action: PayloadAction<{ user: User }>) => {
+        state.loading = false;
+        state.error = null;
+        state.user = action.payload.user;
+      })
+      .addCase(updateMe.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update profile';
+      });
+
+    // Delete Me
+    builder
+      .addCase(deleteMe.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteMe.fulfilled, (state) => {
+        state.loading = false;
+        state.user = null;
+        state.accessToken = null;
+        state.isAuthenticated = false;
+        state.error = null;
+      })
+      .addCase(deleteMe.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to delete account';
       });
 
     // Load User from Storage
@@ -262,13 +331,11 @@ const authSlice = createSlice({
       .addCase(loadUserFromStorage.fulfilled, (state, action) => {
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
-        state.refreshToken = action.payload.refreshToken;
         state.isAuthenticated = true;
       })
       .addCase(loadUserFromStorage.rejected, (state) => {
         state.user = null;
         state.accessToken = null;
-        state.refreshToken = null;
         state.isAuthenticated = false;
       });
   },
