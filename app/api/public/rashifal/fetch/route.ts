@@ -91,6 +91,10 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     const npItem = Array.isArray(npData.np) ? npData.np[0] : npData.np;
     const enItem = Array.isArray(enData.np) ? enData.np[0] : enData.np;
 
+    if(!npItem || !enItem) {
+      throw new Error("Invalid API response structure");
+    }
+
     RASHI_KEYS.forEach((rashiKey) => {
       const npDesc = npItem[rashiKey];
       const enDesc = enItem[rashiKey];

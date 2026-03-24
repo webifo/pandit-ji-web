@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { Language, RashifalType } from "./type";
+import { RashifalType } from "./type";
 
 export interface IRashifalLang {
   en: string;
