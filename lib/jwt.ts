@@ -78,3 +78,11 @@ export const getTokenFromHeader = (req: NextRequest): string | null => {
   const authHeader = req.headers.get('Authorization');
   return authHeader?.split(' ')[1] ?? null;
 };
+
+/**
+ * Check App Secret
+ */
+export const checkAppSecret = (req: NextRequest): boolean => {
+  const authorization = req.headers.get('Authorization');
+  return authorization === `Bearer ${process.env.PANDIT_JI_APP_SECRET}`;
+};
