@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "pr:webifo": "gh pr create --repo github/pandit-ji-web --base stage --head development --title 'Merge Development into Stage' --body 'Pull Request'",
+    "pr:webifo": "gh pr create --repo webifo/pandit-ji-web --base stage --head development --title 'Merge Development into Stage' --body 'Pull Request'",
     "git:development": "git pull origin development || true; git push origin development || true;  git push github development || true; yarn run pr:webifo || true;"
   },
   "dependencies": {
