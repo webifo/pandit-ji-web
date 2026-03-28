@@ -5,24 +5,16 @@ import NepaliDate from 'nepali-date-converter';
 import SunCalc from 'suncalc';
 import { useEffect, useState } from "react";
 import Link from 'next/link';
-import { useAppSelector } from '@/store/hooks';
 import { useRouter } from 'next/navigation';
 
 const CalendarPage = () => {
   const router = useRouter();
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   const panchang = new MhahPanchang();
   const [value, setValue] = useState<any>(null);
 
   const latitude = 27.7172;
   const longitude = 85.3240;
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, router]);
 
   const calculatePanchang = (date: Date) => {
     const normalizedDate = new Date(date);
