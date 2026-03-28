@@ -6,12 +6,23 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "pr:webifo": "gh pr create --repo webifo/pandit-ji-web --base stage --head development --title 'Merge Development into Stage' --body 'Pull Request'",
+    "git:development": "git pull origin development || true; git push origin development || true;  git push github development || true; yarn run pr:webifo || true;"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.11.2",
+    "axios": "^1.13.5",
+    "bcryptjs": "^3.0.3",
+    "crypto": "^1.0.1",
+    "jose": "^6.2.2",
+    "mongodb": "^7.1.1",
+    "nepali-date-converter": "^3.4.0",
+    "nepali-panchang-utils": "^1.1.1",
     "next": "16.1.1",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-redux": "^9.2.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
