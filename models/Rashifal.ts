@@ -3,7 +3,7 @@ import { RashifalType } from "./type";
 
 export interface IRashifalLang {
   en: string;
-  np: string;
+  ne: string;
 }
 
 export interface IRashifalItem {
