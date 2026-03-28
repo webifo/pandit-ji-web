@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb';
 
 export interface IHolidayLang {
   en: string;
-  np: string;
+  ne: string;
 }
 
 export interface IHoliday {

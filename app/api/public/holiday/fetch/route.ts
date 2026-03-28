@@ -66,11 +66,11 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
                 date: new Date(raw.ad),
                 title: {
                     en: descObj.en || raw.title,
-                    np: raw.title
+                    ne: raw.title
                 },
                 description: descObj.ne && descObj.en ? {
                     en: descObj.en,
-                    np: descObj.ne
+                    ne: descObj.ne
                 } : undefined,
                 holiday_type: "Public",
                 image_small_url: descObj.image_small_url,

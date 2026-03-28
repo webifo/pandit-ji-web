@@ -7,25 +7,25 @@ import { checkAppSecret } from "@/lib/jwt";
 import { RashifalType } from "@/models/type";
 
 const RASHI_NAMES: Record<string, IRashifalLang> = {
-  aries: { en: "Aries", np: "मेष" },
-  taurus: { en: "Taurus", np: "वृष" },
-  gemini: { en: "Gemini", np: "मिथुन" },
-  cancer: { en: "Cancer", np: "कर्क" },
-  leo: { en: "Leo", np: "सिंह" },
-  virgo: { en: "Virgo", np: "कन्या" },
-  libra: { en: "Libra", np: "तुला" },
-  scorpio: { en: "Scorpio", np: "वृश्चिक" },
-  sagittarius: { en: "Sagittarius", np: "धनु" },
-  capricorn: { en: "Capricorn", np: "मकर" },
-  aquarius: { en: "Aquarius", np: "कुम्भ" },
-  pisces: { en: "Pisces", np: "मीन" },
+  aries: { en: "Aries", ne: "मेष" },
+  taurus: { en: "Taurus", ne: "वृष" },
+  gemini: { en: "Gemini", ne: "मिथुन" },
+  cancer: { en: "Cancer", ne: "कर्क" },
+  leo: { en: "Leo", ne: "सिंह" },
+  virgo: { en: "Virgo", ne: "कन्या" },
+  libra: { en: "Libra", ne: "तुला" },
+  scorpio: { en: "Scorpio", ne: "वृश्चिक" },
+  sagittarius: { en: "Sagittarius", ne: "धनु" },
+  capricorn: { en: "Capricorn", ne: "मकर" },
+  aquarius: { en: "Aquarius", ne: "कुम्भ" },
+  pisces: { en: "Pisces", ne: "मीन" },
 };
 
 const TYPE_TITLES: Record<RashifalType, IRashifalLang> = {
-  'd': { en: 'Daily Rashifal', np: 'दैनिक राशिफल' },
-  'w': { en: 'Weekly Rashifal', np: 'साप्ताहिक राशिफल' },
-  'm': { en: 'Monthly Rashifal', np: 'मासिक राशिफल' },
-  'y': { en: 'Yearly Rashifal', np: 'वार्षिक राशिफल' }
+  'd': { en: 'Daily Rashifal', ne: 'दैनिक राशिफल' },
+  'w': { en: 'Weekly Rashifal', ne: 'साप्ताहिक राशिफल' },
+  'm': { en: 'Monthly Rashifal', ne: 'मासिक राशिफल' },
+  'y': { en: 'Yearly Rashifal', ne: 'वार्षिक राशिफल' }
 };
 
 const RASHI_KEYS = Object.keys(RASHI_NAMES);
@@ -103,7 +103,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
         rashifalItems.push({
           rashi: RASHI_NAMES[rashiKey],
           description: {
-            np: npDesc?.trim() || '',
+            ne: npDesc?.trim() || '',
             en: enDesc?.trim() || ''
           }
         });
@@ -116,12 +116,12 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
     const titleLang: IRashifalLang = {
       en: TYPE_TITLES[type.toLowerCase() as RashifalType]?.en,
-      np: TYPE_TITLES[type.toLowerCase() as RashifalType]?.np,
+      ne: TYPE_TITLES[type.toLowerCase() as RashifalType]?.ne,
     };
 
     const authorLang: IRashifalLang = {
       en: enData.author?.en || npData.author?.en || "Nepali Patro",
-      np: npData.author?.np || enData.author?.np || "नेपाली पात्रो",
+      ne: npData.author?.np || enData.author?.np || "नेपाली पात्रो",
     };
 
     const recordData: IRashifal = {
