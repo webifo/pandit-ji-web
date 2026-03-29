@@ -114,11 +114,12 @@ export async function findById<T extends Document>(
 export async function findMany<T extends Document>(
   collectionName: string,
   filter: Filter<T> = {},
-  options?: { limit?: number; skip?: number; sort?: Record<string, 1 | -1> }
+  options?: { limit?: number; skip?: number; sort?: Record<string, 1 | -1>, projection?: Partial<Record<keyof T, 0 | 1>> },
 ): Promise<WithId<T>[]> {
   const collection = await getMongoCollection<T>(collectionName);
-  let cursor = collection.find(filter);
-
+  let cursor = collection.find(filter, {
+    projection: options?.projection,
+  });
   if (options?.sort)  cursor = cursor.sort(options.sort);
   if (options?.skip)  cursor = cursor.skip(options.skip);
   if (options?.limit) cursor = cursor.limit(options.limit);
